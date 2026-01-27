@@ -20,36 +20,87 @@ ApplicationWindow {
         }
     }
 
-    // --- Modern Top Bar ---
+// --- Modern Top Bar ---
     Rectangle {
         id: topBar
         width: parent.width
-        height: 60
+        height: 70
         color: "#2C2C2C"
         z: 10
 
+        // Simulated Tab Bar (Since multi-tab is complex for basic steps)
         RowLayout {
-            anchors.fill: parent
-            anchors.margins: 10
+            anchors.top: parent.top
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 30
+            spacing: 5
+            
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.preferredWidth: 200
+                height: 30
+                color: "#1E1E1E"
+                radius: 10
+                
+                RowLayout {
+                    anchors.fill: parent
+                    anchors.margins: 5
+                    Image {
+                        source: "qrc:/assets/logo.png"
+                        sourceSize: Qt.size(16, 16)
+                    }
+                    Text {
+                        text: webView.title || "New Tab"
+                        color: "white"
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                    }
+                    Text {
+                        text: "✖"
+                        color: "gray"
+                        font.pixelSize: 10
+                    }
+                }
+            }
+            // Add Tab Button
+            Rectangle {
+                width: 30
+                height: 30
+                color: "transparent"
+                Text { anchors.centerIn: parent; text: "+"; color: "white"; font.pixelSize: 18 }
+            }
+            Item { Layout.fillWidth: true } // Spacer
+        }
+
+        // URL Bar & Controls
+        RowLayout {
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.margins: 5
             spacing: 15
+            height: 35
 
             // Navigation Controls
             Button {
-                text: "←"
+                padding: 5
                 background: Rectangle { color: "transparent" }
-                contentItem: Text { text: "←"; color: "white"; font.pixelSize: 20 }
+                contentItem: Text { text: "←"; color: enabled ? "white" : "gray"; font.pixelSize: 20 }
                 onClicked: webView.goBack()
+                enabled: webView.canGoBack
             }
 
             Button {
-                text: "→"
+                padding: 5
                 background: Rectangle { color: "transparent" }
-                contentItem: Text { text: "→"; color: "white"; font.pixelSize: 20 }
+                contentItem: Text { text: "→"; color: enabled ? "white" : "gray"; font.pixelSize: 20 }
                 onClicked: webView.goForward()
+                enabled: webView.canGoForward
             }
 
             Button {
-                text: "↻"
+                padding: 5
                 background: Rectangle { color: "transparent" }
                 contentItem: Text { text: "↻"; color: "white"; font.pixelSize: 20 }
                 onClicked: webView.reload()
@@ -58,40 +109,47 @@ ApplicationWindow {
             // Omni-Bar (URL)
             Rectangle {
                 Layout.fillWidth: true
-                height: 40
-                radius: 8
+                height: 32
+                radius: 16
                 color: "#121212"
-                border.color: "#3A3A3A"
+                border.color: "#333"
 
                 TextInput {
                     id: urlInput
                     anchors.fill: parent
-                    anchors.margins: 10
+                    anchors.leftMargin: 15
+                    anchors.rightMargin: 15
                     verticalAlignment: Text.AlignVCenter
                     color: "#E0E0E0"
-                    font.pixelSize: 14
-                    text: webView.url
+                    font.pixelSize: 13
+                    text: webView.url == "about:blank" ? "" : webView.url
                     selectByMouse: true
                     onAccepted: {
                         var input = text.trim()
-                        if (input.indexOf("http") !== 0) {
-                            // Default to DuckDuckGo (De-googled search)
-                            webView.url = "https://duckduckgo.com/?q=" + input
-                        } else {
+                        if (input.indexOf("http") === 0) {
                             webView.url = input
+                        } else if (input.indexOf(".") > 0 && input.indexOf(" ") === -1) {
+                            webView.url = "https://" + input
+                        } else {
+                            // Default to Google Search
+                            webView.url = "https://www.google.com/search?q=" + encodeURIComponent(input)
                         }
                     }
                 }
             }
 
-            // Privacy Dashboard Button
+            // Icons: Brave-like Shield & Menu
             Button {
-                text: "🛡️"
-                background: Rectangle {
-                    color: "#333333"
-                    radius: 5
-                }
-                contentItem: Text { text: "🛡️"; color: "#00FF00"; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                background: Rectangle { color: "transparent" }
+                contentItem: Text { text: "🦁"; color: "orange"; font.pixelSize: 20 } // Shield Icon visual
+                onClicked: notificationPopup.open()
+                ToolTip.visible: hovered
+                ToolTip.text: "Aegis Shields UP"
+            }
+
+            Button {
+                background: Rectangle { color: "transparent" }
+                contentItem: Text { text: "≡"; color: "white"; font.pixelSize: 20 }
                 onClicked: privacyDrawer.open()
             }
         }
@@ -104,8 +162,18 @@ ApplicationWindow {
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        url: "https://duckduckgo.com" // Default safe start
+        url: "https://www.google.com" // Default to Google
         backgroundColor: "#1E1E1E"
+        
+        onUrlChanged: {
+            urlInput.text = url
+        }
+        
+        onLoadingChanged: {
+            if (loadRequest.status === WebEngineView.LoadStarted) {
+                // Show loading indicator logic here
+            }
+        }
     }
 
     // --- Privacy Dashboard (Drawer) ---

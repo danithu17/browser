@@ -18,7 +18,7 @@ set(SOURCE_FILES
     resources/qml.qrc
 )
 
-add_executable(AegisBrowser ${SOURCE_FILES})
+add_executable(AegisBrowser WIN32 ${SOURCE_FILES})
 
 target_link_libraries(AegisBrowser PRIVATE
     Qt6::Quick

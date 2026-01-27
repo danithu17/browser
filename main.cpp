@@ -9,6 +9,8 @@ int main(int argc, char *argv[])
 {
     QtWebEngineQuick::initialize();
     QGuiApplication app(argc, argv);
+    app.setWindowIcon(QIcon(":/assets/logo.png"));
+    app.setApplicationDisplayName("Aegis Browser");
 
     // Register our C++ backend to QML
     qmlRegisterType<WebEngineHandler>("Aegis.Core", 1, 0, "PrivacyCore");
