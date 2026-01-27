@@ -32,7 +32,6 @@ jobs:
       - name: Configure CMake
         shell: bash
         run: |
-          # Check if we are in the root or if code is in a subfolder
           if [ -f "AegisBrowser/CMakeLists.txt" ]; then
             cd AegisBrowser
             cmake -S . -B ../build -DCMAKE_BUILD_TYPE=Release
@@ -47,8 +46,15 @@ jobs:
         shell: bash
         run: cmake --build build --config Release
 
+      - name: Deploy Qt DLLs
+        shell: cmd
+        run: |
+          mkdir dist
+          copy build\Release\AegisBrowser.exe dist\
+          windeployqt --release --qmldir resources/ --compiler-runtime dist\AegisBrowser.exe
+
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: AegisBrowser-Windows
-          path: build/Release/AegisBrowser.exe
+          path: dist/
