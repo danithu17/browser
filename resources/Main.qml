@@ -155,23 +155,39 @@ ApplicationWindow {
         }
     }
 
-    // --- Main Browser View ---
-    WebEngineView {
-        id: webView
+    // --- Main Content Area ---
+    Item {
         anchors.top: topBar.bottom
         anchors.left: parent.left
         anchors.right: parent.right
         anchors.bottom: parent.bottom
-        url: "https://www.google.com" // Default to Google
-        backgroundColor: "#1E1E1E"
         
-        onUrlChanged: {
-            urlInput.text = url
+        // 1. Web Engine View
+        WebEngineView {
+            id: webView
+            anchors.fill: parent
+            visible: url !== "about:blank" // Hide when on new tab
+            url: "about:blank" // Start empty to show home page
+            backgroundColor: "#1E1E1E"
+            
+            onUrlChanged: {
+                urlInput.text = url
+            }
         }
-        
-        onLoadingChanged: {
-            if (loadRequest.status === WebEngineView.LoadStarted) {
-                // Show loading indicator logic here
+
+        // 2. New Tab Page (Overlay)
+        Loader {
+            id: homePageLoader
+            anchors.fill: parent
+            visible: webView.url == "about:blank" || webView.url == ""
+            source: "HomePage.qml"
+            onLoaded: {
+                item.onRequestSearch.connect((text) => {
+                     webView.url = "https://duckduckgo.com/?q=" + text
+                })
+                item.onRequestUrl.connect((url) => {
+                     webView.url = url
+                })
             }
         }
     }
@@ -179,6 +195,8 @@ ApplicationWindow {
     // --- Privacy Dashboard (Drawer) ---
     Drawer {
         id: privacyDrawer
+        // ... (Keep existing drawer code from previous file if possible, or fully replace)
+        // Since replace_file_content replaces blocks, I will rewrite the essential drawer + Download Panel parts.
         width: 300
         height: parent.height
         edge: Qt.RightEdge
@@ -190,67 +208,72 @@ ApplicationWindow {
             spacing: 20
 
             Text {
-                text: "Privacy Dashboard"
+                text: "Control Center"
                 color: "white"
                 font.bold: true
                 font.pixelSize: 22
                 Layout.alignment: Qt.AlignHCenter
             }
 
-            Rectangle {
-                height: 1
-                Layout.fillWidth: true
-                color: "#444"
-            }
-
-            // Shield Animator
-            Rectangle {
-                width: 100
-                height: 100
-                radius: 50
-                color: "transparent"
-                border.color: "#00FF00"
-                border.width: 3
-                Layout.alignment: Qt.AlignHCenter
-                
-                Text {
-                    anchors.centerIn: parent
-                    text: "100%"
-                    color: "#00FF00"
-                    font.pixelSize: 20
-                }
-            }
-
-            Text {
-                text: "Google Safe Browsing: ❌ Blocked\nUser Agent: 🕶️ Generic\nTracker Blocking: ✅ Active"
-                color: "#AAAAAA"
-                lineHeight: 1.5
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-            }
-
-            Item { Layout.fillHeight: true } // Spacer
+            Rectangle { height: 1; Layout.fillWidth: true; color: "#444" }
 
             // NUCLEAR OPTION
             Button {
                 Layout.fillWidth: true
                 height: 50
-                background: Rectangle {
-                    color: parent.down ? "#800000" : "#FF3333"
-                    radius: 8
-                }
-                contentItem: Text {
-                    text: "☢️ NUCLEAR OPTION"
-                    color: "white"
-                    font.bold: true
-                    horizontalAlignment: Text.AlignHCenter
-                    verticalAlignment: Text.AlignVCenter
-                }
-                onClicked: {
-                    privacyCore.nuclearOption()
-                    privacyDrawer.close()
+                background: Rectangle { color: "#FF3333"; radius: 8 }
+                contentItem: Text { text: "☢️ NUCLEAR WIPE"; color: "white"; font.bold: true; horizontalAlignment: Text.AlignHCenter; verticalAlignment: Text.AlignVCenter }
+                onClicked: { privacyCore.nuclearOption(); privacyDrawer.close() }
+            }
+
+            Rectangle { height: 1; Layout.fillWidth: true; color: "#444" }
+
+            // -- Downloads Section --
+            Text { text: "Recent Downloads"; color: "#AAAAAA"; font.bold: true }
+
+            ListView {
+                id: downloadList
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                clip: true
+                model: ListModel { id: downloadsModel }
+                delegate: Rectangle {
+                    width: parent.width
+                    height: 50
+                    color: "#333"
+                    radius: 5
+                    border.color: "#444"
+                    
+                    Column {
+                        anchors.centerIn: parent
+                        Text { text: name; color: "white"; font.pixelSize: 12 }
+                        Text { text: Math.round(progress * 100) + "%"; color: "#00FF00"; font.pixelSize: 10 }
+                    }
                 }
             }
+        }
+    }
+    
+    // Connect C++ Download Signals to UI
+    Connections {
+        target: privacyCore
+        function onDownloadStarted(name) {
+            downloadsModel.append({ "name": name, "progress": 0 })
+            notificationRef.text = "⬇️ Downloading: " + name
+            notificationPopup.open()
+            privacyDrawer.open() // access to downloads
+        }
+        function onDownloadProgress(received, total) {
+             if (downloadsModel.count > 0) {
+                 downloadsModel.setProperty(downloadsModel.count - 1, "progress", received/total)
+             }
+        }
+        function onDownloadFinished(name) {
+             notificationRef.text = "✅ Finished: " + name
+             notificationPopup.open()
+             if (downloadsModel.count > 0) {
+                 downloadsModel.setProperty(downloadsModel.count - 1, "progress", 1.0)
+             }
         }
     }
 
@@ -259,22 +282,11 @@ ApplicationWindow {
         id: notificationPopup
         anchors.centerIn: parent
         width: 300
-        height: 100
-        modal: true
-        focus: true
-        closePolicy: Popup.CloseOnEscape | Popup.CloseOnPressOutside
-        
-        background: Rectangle {
-            color: "#333333"
-            border.color: "#00FF00"
-            radius: 10
-        }
-
-        Text {
-            id: notificationText
-            anchors.centerIn: parent
-            color: "white"
-            horizontalAlignment: Text.AlignHCenter
-        }
+        height: 60
+        modal: false
+        closePolicy: Popup.CloseOnEscape
+        background: Rectangle { color: "#333333"; border.color: "#00FF00"; radius: 10 }
+        Text { id: notificationRef; anchors.centerIn: parent; color: "white" }
     }
 }
+

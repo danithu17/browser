@@ -5,7 +5,10 @@
 #include <QWebEngineProfile>
 #include <QWebEngineSettings>
 #include <QWebEngineCookieStore>
+#include <QWebEngineDownloadRequest>
 #include <QDebug>
+#include <QStandardPaths>
+#include <QFileDialog>
 
 class WebEngineHandler : public QObject
 {
@@ -23,9 +26,17 @@ public:
     // Setup strict privacy rules
     Q_INVOKABLE void enforcePrivacy();
 
+    // Download Management
+    void handleDownload(QWebEngineDownloadRequest *download);
+
 signals:
     void statusChanged();
     void privacyStatsUpdated(QString message);
+    
+    // Download Signals
+    void downloadStarted(QString name);
+    void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
+    void downloadFinished(QString name);
 
 private:
     QWebEngineProfile *m_profile;

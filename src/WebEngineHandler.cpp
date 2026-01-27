@@ -26,9 +26,39 @@ void WebEngineHandler::enforcePrivacy()
     // 4. Force HTTPS (Logic would typically be in an interceptor, but we set preference here)
     // In a full implementation, we would derive from QWebEngineUrlRequestInterceptor
 
+    // 5. Connect Download Manager
+    connect(m_profile, &QWebEngineProfile::downloadRequested, this, &WebEngineHandler::handleDownload);
+
     m_googleServicesDisabled = true;
     emit statusChanged();
     emit privacyStatsUpdated("Google Safe Browsing: DISABLED\nTelemetry: BLOCKED\nSession: ISOLATED");
+}
+
+void WebEngineHandler::handleDownload(QWebEngineDownloadRequest *download)
+{
+    qDebug() << "Download Requested: " << download->downloadFileName();
+    
+    // Save to standard Downloads folder
+    QString standardPath = QStandardPaths::writableLocation(QStandardPaths::DownloadLocation);
+    if (standardPath.isEmpty()) standardPath = "C:/Users/Public/Downloads";
+    
+    QString filePath = standardPath + "/" + download->downloadFileName();
+    download->setDownloadDirectory(standardPath);
+    download->setDownloadFileName(download->downloadFileName());
+    download->accept();
+
+    emit downloadStarted(download->downloadFileName());
+
+    // Track Progress
+    connect(download, &QWebEngineDownloadRequest::receivedBytesChanged, this, [this, download]() {
+        emit downloadProgress(download->receivedBytes(), download->totalBytes());
+    });
+
+    connect(download, &QWebEngineDownloadRequest::stateChanged, this, [this, download](QWebEngineDownloadRequest::DownloadState state) {
+        if (state == QWebEngineDownloadRequest::DownloadCompleted) {
+            emit downloadFinished(download->downloadFileName());
+        }
+    });
 }
 
 void WebEngineHandler::nuclearOption()
