@@ -63,12 +63,7 @@ void WebEngineHandler::handleDownload(QWebEngineDownloadRequest *download)
     });
 }
 
-    connect(download, &QWebEngineDownloadRequest::stateChanged, this, [this, download](QWebEngineDownloadRequest::DownloadState state) {
-        if (state == QWebEngineDownloadRequest::DownloadCompleted) {
-            emit downloadFinished(download->downloadFileName());
-        }
-    });
-}
+
 
 // --- Authentication Logic ---
 
