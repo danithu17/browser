@@ -27,6 +27,7 @@ jobs:
           host: ${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
           target: "desktop"
           arch: ${{ matrix.os == 'windows-latest' && 'win64_msvc2019_64' || '' }}
+          modules: "qtwebengine"
 
       - name: Install Linux Dependencies
         if: runner.os == 'Linux'
