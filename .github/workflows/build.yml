@@ -1,0 +1,67 @@
+name: Build Aegis Browser
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: "6.6.0"
+          host: ${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          target: "desktop"
+          arch: ${{ matrix.os == 'windows-latest' && 'win64_msvc2019_64' || '' }}
+
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libvulkan1
+
+      - name: Configure CMake
+        shell: bash
+        run: |
+          # Check if we are in the root or if code is in a subfolder
+          if [ -f "AegisBrowser/CMakeLists.txt" ]; then
+            cd AegisBrowser
+            cmake -S . -B ../build -DCMAKE_BUILD_TYPE=Release
+          elif [ -f "CMakeLists.txt" ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          else
+            echo "Error: CMakeLists.txt not found!"
+            exit 1
+          fi
+
+      - name: Build
+        shell: bash
+        run: cmake --build build --config Release
+
+      - name: Upload Artifacts (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AegisBrowser-Windows
+          path: build/Release/AegisBrowser.exe
+
+      - name: Upload Artifacts (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: AegisBrowser-Linux
+          path: build/AegisBrowser
