@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest]
+        os: [windows-latest]
 
     steps:
       - name: Checkout code
@@ -24,16 +24,10 @@ jobs:
         uses: jurplel/install-qt-action@v3
         with:
           version: "6.6.0"
-          host: ${{ matrix.os == 'windows-latest' && 'windows' || 'linux' }}
+          host: "windows"
           target: "desktop"
-          arch: ${{ matrix.os == 'windows-latest' && 'win64_msvc2019_64' || '' }}
-          modules: "qtwebengine"
-
-      - name: Install Linux Dependencies
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 libvulkan1
+          arch: "win64_msvc2019_64"
+          modules: "qtwebengine qtwebchannel qtpositioning"
 
       - name: Configure CMake
         shell: bash
@@ -53,16 +47,8 @@ jobs:
         shell: bash
         run: cmake --build build --config Release
 
-      - name: Upload Artifacts (Windows)
-        if: runner.os == 'Windows'
+      - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: AegisBrowser-Windows
           path: build/Release/AegisBrowser.exe
-
-      - name: Upload Artifacts (Linux)
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: AegisBrowser-Linux
-          path: build/AegisBrowser
