@@ -1,8 +1,10 @@
 #include "WebEngineHandler.h"
 #include <QString>
+#include <QSettings>
+#include <QCryptographicHash>
 
 WebEngineHandler::WebEngineHandler(QObject *parent)
-    : QObject(parent), m_profile(QWebEngineProfile::defaultProfile()), m_googleServicesDisabled(false)
+    : QObject(parent), m_profile(QWebEngineProfile::defaultProfile()), m_googleServicesDisabled(false), m_isLocked(true)
 {
     enforcePrivacy();
 }
@@ -59,6 +61,52 @@ void WebEngineHandler::handleDownload(QWebEngineDownloadRequest *download)
             emit downloadFinished(download->downloadFileName());
         }
     });
+}
+
+    connect(download, &QWebEngineDownloadRequest::stateChanged, this, [this, download](QWebEngineDownloadRequest::DownloadState state) {
+        if (state == QWebEngineDownloadRequest::DownloadCompleted) {
+            emit downloadFinished(download->downloadFileName());
+        }
+    });
+}
+
+// --- Authentication Logic ---
+
+bool WebEngineHandler::hasPinSet()
+{
+    QSettings settings("AegisCorp", "AegisBrowser");
+    return settings.contains("auth/pinHash");
+}
+
+void WebEngineHandler::setPin(QString pin)
+{
+    if (pin.length() < 4) return;
+    
+    QByteArray hash = QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256);
+    QSettings settings("AegisCorp", "AegisBrowser");
+    settings.setValue("auth/pinHash", hash.toHex());
+    m_storedPinHash = hash.toHex();
+    
+    // Auto unlock on set
+    m_isLocked = false;
+    emit unlocked();
+}
+
+bool WebEngineHandler::checkPin(QString pin)
+{
+    QSettings settings("AegisCorp", "AegisBrowser");
+    QString stored = settings.value("auth/pinHash").toString();
+    
+    QByteArray inputHash = QCryptographicHash::hash(pin.toUtf8(), QCryptographicHash::Sha256);
+    
+    if (stored == inputHash.toHex()) {
+        m_isLocked = false;
+        emit unlocked();
+        return true;
+    }
+    
+    emit loginFailed();
+    return false;
 }
 
 void WebEngineHandler::nuclearOption()

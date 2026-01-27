@@ -29,10 +29,20 @@ public:
     // Download Management
     void handleDownload(QWebEngineDownloadRequest *download);
 
+    // Authentication & Vault
+    Q_INVOKABLE bool checkPin(QString pin);
+    Q_INVOKABLE bool hasPinSet();
+    Q_INVOKABLE void setPin(QString pin);
+    bool isLocked() const { return m_isLocked; }
+
 signals:
     void statusChanged();
     void privacyStatsUpdated(QString message);
     
+    // Auth Signals
+    void unlocked();
+    void loginFailed();
+
     // Download Signals
     void downloadStarted(QString name);
     void downloadProgress(qint64 bytesReceived, qint64 bytesTotal);
@@ -41,6 +51,8 @@ signals:
 private:
     QWebEngineProfile *m_profile;
     bool m_googleServicesDisabled;
+    bool m_isLocked;
+    QString m_storedPinHash; // In real app, store in QSettings or Keychain
 };
 
 #endif // WEBENGINEHANDLER_H

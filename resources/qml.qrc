@@ -2,6 +2,7 @@
     <qresource prefix="/">
         <file>Main.qml</file>
         <file>HomePage.qml</file>
+        <file>LoginScreen.qml</file>
         <file>assets/logo.png</file>
     </qresource>
 </RCC>

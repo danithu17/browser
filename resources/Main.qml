@@ -288,5 +288,10 @@ ApplicationWindow {
         background: Rectangle { color: "#333333"; border.color: "#00FF00"; radius: 10 }
         Text { id: notificationRef; anchors.centerIn: parent; color: "white" }
     }
+
+    // --- Secure Vault Login ---
+    LoginScreen {
+        id: loginOverlay
+    }
 }
 
