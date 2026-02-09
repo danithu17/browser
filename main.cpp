@@ -1,5 +1,7 @@
 #include <QString>
 #include <QGuiApplication>
+#include <QIcon>
+#include <QCoreApplication>
 #include <QQmlApplicationEngine>
 #include <QtWebEngineQuick/QtWebEngineQuick>
 #include <QQmlContext>
