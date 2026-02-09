@@ -15,7 +15,7 @@ ApplicationWindow {
     PrivacyCore {
         id: privacyCore
         onPrivacyStatsUpdated: (msg) => {
-            notificationText.text = msg
+            notificationRef.text = msg
             notificationPopup.open()
         }
     }
@@ -182,10 +182,10 @@ ApplicationWindow {
             visible: webView.url == "about:blank" || webView.url == ""
             source: "HomePage.qml"
             onLoaded: {
-                item.onRequestSearch.connect((text) => {
+                item.requestSearch.connect((text) => {
                      webView.url = "https://duckduckgo.com/?q=" + text
                 })
-                item.onRequestUrl.connect((url) => {
+                item.requestUrl.connect((url) => {
                      webView.url = url
                 })
             }
@@ -294,4 +294,3 @@ ApplicationWindow {
         id: loginOverlay
     }
 }
-
